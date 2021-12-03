@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block preamble %}
+
+	<title>View {{ inst }} Image - JWQL</title>
+
+{% endblock %}
+
+{% block content %}
+
+    <main role="main" class="container">
+    	<!-- Show image group name -->
+    	<h3>{{ file_root }}</h3>
+
+    	<!-- Specify the attributes of what is currently being shown -->
+    	<div class="d-flex flex-row">
+    		<div class="APT_parameters">Proposal: <a id="proposal" href="{{ url('jwql:archive_thumb', args=[inst, prop_id]) }}"></a></div>
+    		<div class="APT_parameters">Observation: <a id="obs_id"></a></div>
+    		<div class="APT_parameters">Visit: <a id="visit_id"></a></div>
+    		<div class="APT_parameters">Detector: <a id="detector"></a></div>
+    	</div>
+    	FITS Filename: <a id="fits_filename"></a><br>
+    	JPG Filename: <a id="jpg_filename"></a><br><br>
+
+        <div width=100%>
+            <!--Add Bokeh HTML-->
+            {{ tabs_components[0] | safe }}
+        </div>
+
+        <!--Add Bokeh scripts-->
+        {{ tabs_components[1] | safe }}
+
+	</main>
+
+{% endblock %}

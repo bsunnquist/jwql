@@ -69,6 +69,7 @@ from .data_containers import thumbnails_query_ajax
 from .forms import InstrumentAnomalySubmitForm
 from .forms import AnomalyQueryForm
 from .forms import FileSearchForm
+from .bokeh_image_viewer import bokeh_view
 
 
 FILESYSTEM_DIR = os.path.join(get_config()['jwql_dir'], 'filesystem')
@@ -768,5 +769,39 @@ def view_image(request, inst, file_root, rewrite=False):
                'suffixes': image_info['suffixes'],
                'num_ints': image_info['num_ints'],
                'form': form}
+
+    return render(request, template, context)
+
+
+def view_image_bokeh(request, inst, file_root):
+    """Generate the bokeh image viewer page
+
+    Parameters
+    ----------
+    request : HttpRequest object
+        Incoming request from the webpage
+    inst : str
+        Name of JWST instrument
+    file_root : str
+        FITS filename of selected image in filesystem
+
+    Returns
+    -------
+    HttpResponse object
+        Outgoing response sent to the webpage
+    """
+
+    # Ensure the instrument is correctly capitalized
+    inst = JWST_INSTRUMENT_NAMES_MIXEDCASE[inst.lower()]
+
+    tabs_components = bokeh_view(file_root)
+
+    template = 'view_image_bokeh.html'
+
+    # Build the context
+    context = {'inst': inst,
+               'prop_id': file_root[2:7],
+               'file_root': file_root,
+               'tabs_components': tabs_components}
 
     return render(request, template, context)
