@@ -12,6 +12,7 @@ Authors
     - Matthew Bourque
     - Teagan King
     - Bryan Hilbert
+    - Maria Pena-Guerrero
 
 Use
 ---
@@ -44,18 +45,18 @@ import requests
 
 from jwql.database import database_interface as di
 from jwql.database.database_interface import load_connection
-from jwql.edb.engineering_database import get_mnemonic, get_mnemonic_info
+from jwql.edb.engineering_database import get_mnemonic, get_mnemonic_info, mnemonic_inventory
 from jwql.instrument_monitors.miri_monitors.data_trending import dashboard as miri_dash
 from jwql.instrument_monitors.nirspec_monitors.data_trending import dashboard as nirspec_dash
 from jwql.utils.utils import check_config_for_key, ensure_dir_exists, filesystem_path, filename_parser, get_config
 from jwql.utils.constants import MONITORS, PREVIEW_IMAGE_LISTFILE, THUMBNAIL_LISTFILE
-from jwql.utils.constants import IGNORED_SUFFIXES, INSTRUMENT_SERVICE_MATCH, JWST_INSTRUMENT_NAMES_MIXEDCASE, \
-                                 JWST_INSTRUMENT_NAMES_SHORTHAND, SUFFIXES_TO_ADD_ASSOCIATION, SUFFIXES_WITH_AVERAGED_INTS
-from jwql.utils.preview_image import PreviewImage
+from jwql.utils.constants import IGNORED_SUFFIXES, INSTRUMENT_SERVICE_MATCH, JWST_INSTRUMENT_NAMES_MIXEDCASE
+from jwql.utils.constants import JWST_INSTRUMENT_NAMES_SHORTHAND, SUFFIXES_TO_ADD_ASSOCIATION, SUFFIXES_WITH_AVERAGED_INTS
 from jwql.utils.credentials import get_mast_token
+from jwql.utils.utils import get_rootnames_for_instrument_proposal
 from .forms import InstrumentAnomalySubmitForm
 from astroquery.mast import Mast
-from jwedb.edb_interface import mnemonic_inventory
+
 
 # astroquery.mast import that depends on value of auth_mast
 # this import has to be made before any other import of astroquery.mast
@@ -75,7 +76,6 @@ if not ON_GITHUB_ACTIONS and not ON_READTHEDOCS:
     from astropy import config
     conf = config.get_config('astroquery')
     conf['mast'] = {'server': 'https://{}'.format(mast_flavour)}
-
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 if not ON_GITHUB_ACTIONS and not ON_READTHEDOCS:
@@ -154,7 +154,7 @@ def data_trending():
 
 
 def nirspec_trending():
-    """Container for Miri datatrending dashboard and components
+    """Container for NIRSpec datatrending dashboard and components
 
     Returns
     -------
@@ -214,7 +214,7 @@ def get_all_proposals():
     """
     proprietary_proposals = os.listdir(os.path.join(FILESYSTEM_DIR, 'proprietary'))
     public_proposals = os.listdir(os.path.join(FILESYSTEM_DIR, 'public'))
-    all_proposals = [prop[2:] for prop in proprietary_proposals+public_proposals if 'jw' in prop]
+    all_proposals = [prop[2:] for prop in proprietary_proposals + public_proposals if 'jw' in prop]
     proposals = sorted(list(set(all_proposals)), reverse=True)
     return proposals
 
@@ -1034,30 +1034,6 @@ def get_proposal_info(filepaths):
     return proposal_info
 
 
-def get_rootnames_for_instrument_proposal(instrument, proposal):
-    """Return a list of rootnames for the given instrument and proposal
-
-    Parameters
-    ----------
-    instrument : str
-        Name of the JWST instrument, with first letter capitalized
-        (e.g. ``Fgs``)
-
-    proposal : int or str
-        Proposal ID number
-
-    Returns
-    -------
-    rootnames : list
-        List of rootnames for the given instrument and proposal number
-    """
-    tap_service = vo.dal.TAPService("http://vao.stsci.edu/caomtap/tapservice.aspx")
-    tap_results = tap_service.search(f"select observationID from dbo.CaomObservation where collection='JWST' and maxLevel=2 and insName like '{instrument.lower()}' and prpID='{int(proposal)}'")
-    prop_table = tap_results.to_table()
-    rootnames = prop_table['observationID'].data
-    return rootnames.compressed()
-
-
 def get_rootnames_for_proposal(proposal):
     """Return a list of rootnames for the given proposal (all instruments)
 
@@ -1116,7 +1092,7 @@ def get_thumbnails_all_instruments(parameters):
                 and (parameters['detectors'][inst.lower()] == [])
                 and (parameters['filters'][inst.lower()] == [])
                 and (parameters['exposure_types'][inst.lower()] == [])
-                and (parameters['read_patterns'][inst.lower()] == [])):
+                and (parameters['read_patterns'][inst.lower()] == [])):  # noqa: W503
             params = {"columns": "*", "filters": []}
         else:
             query_filters = []
@@ -1537,8 +1513,11 @@ def thumbnails_ajax(inst, proposal, obs_num=None):
         try:
             data_dict['file_data'][rootname]['expstart'] = exp_start
             data_dict['file_data'][rootname]['expstart_iso'] = Time(exp_start, format='mjd').iso.split('.')[0]
-        except:
-            print("issue with get_expstart for {}".format(rootname))
+        except (ValueError, TypeError) as e:
+            logging.warning("Unable to populate exp_start info for {}".format(rootname))
+            loggin.warning(e)
+        except KeyError:
+            print("KeyError with get_expstart for {}".format(rootname))
 
     # Extract information for sorting with dropdown menus
     # (Don't include the proposal as a sorting parameter if the proposal has already been specified)
