@@ -438,6 +438,7 @@ def archive_thumbnails_query_ajax(request):
         instruments_list.append(instrument)
 
     parameters = anomaly_query_config.PARAMETERS
+    print(parameters)  # ben remove
 
     # when parameters only contains nirspec as instrument, thumbnails still end up being all niriss data
     thumbnails = get_thumbnails_all_instruments(parameters)

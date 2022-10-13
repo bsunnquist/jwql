@@ -1140,12 +1140,13 @@ def get_thumbnails_all_instruments(parameters):
         results = response[0].json()['data']
 
         inst_filenames = [result['filename'].split('.')[0] for result in results]
-        inst_filenames = [filename for filename in inst_filenames if os.path.splitext(filename).split('_')[-1] not in IGNORED_SUFFIXES]
-        filenames.extend(inst_filenames)
+        inst_filenames = [filename for filename in inst_filenames if filename.split('_')[-1] not in IGNORED_SUFFIXES]
 
         # Get list of all thumbnails
         thumbnail_list_file = f"{THUMBNAIL_LISTFILE}_{inst.lower()}.txt"
         thumbnail_inst_list = retrieve_filelist(os.path.join(THUMBNAIL_FILESYSTEM, THUMBNAIL_LISTFILE))
+        print('hello')
+        print(thumbnail_inst_list)
 
         # Get subset of thumbnail images that match the filenames
         thumbnails_inst_subset = [os.path.basename(item) for item in thumbnail_inst_list if
