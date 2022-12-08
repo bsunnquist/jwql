@@ -1080,6 +1080,8 @@ def get_thumbnails_all_instruments(parameters):
     anomalies = parameters['anomalies']
 
     thumbnails_subset = []
+    print(parameters)
+    print('hi', parameters['read_patterns']['nircam'])
 
     for inst in parameters['instruments']:
         # Make sure instruments are of the proper format (e.g. "Nircam")
@@ -1114,15 +1116,17 @@ def get_thumbnails_all_instruments(parameters):
 
         response = Mast.service_request_async(service, params)
         results = response[0].json()['data']
+        print(len(results))
 
         inst_filenames = [result['filename'].split('.')[0] for result in results]
         inst_filenames = [filename for filename in inst_filenames if filename.split('_')[-1] not in IGNORED_SUFFIXES]
+        print(inst_filenames)
 
         # Get list of all thumbnails
         thumbnail_list_file = f"{THUMBNAIL_LISTFILE}_{inst.lower()}.txt"
         thumbnail_inst_list = retrieve_filelist(os.path.join(THUMBNAIL_FILESYSTEM, THUMBNAIL_LISTFILE))
-        print('hello')
-        print(thumbnail_inst_list)
+        #print('hello')
+        #print(thumbnail_inst_list)
 
         # Get subset of thumbnail images that match the filenames
         thumbnails_inst_subset = [os.path.basename(item) for item in thumbnail_inst_list if
